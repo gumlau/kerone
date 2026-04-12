@@ -1,75 +1,50 @@
-import assert from 'assert'
-import * as cheerio from 'cheerio'
-import { Feed } from 'feed'
+import { Feed } from "feed";
+import { getBlogPosts } from "@/data/blog";
+import { DATA } from "@/data/resume";
 
-export async function GET(req) {
-  let siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+export async function GET() {
+  const siteUrl = DATA.url;
 
-  if (!siteUrl) {
-    return new Response('RSS feed not configured', {
-      status: 404,
-      headers: {
-        'content-type': 'text/plain',
-      },
-    })
-  }
+  const author = {
+    name: DATA.name,
+    email: DATA.contact.email,
+    link: siteUrl,
+  };
 
-  let author = {
-    name: 'Spencer Sharp',
-    email: 'spencer@planetaria.tech',
-  }
-
-  let feed = new Feed({
-    title: author.name,
-    description: 'Your blog description',
+  const feed = new Feed({
+    title: DATA.name,
+    description: DATA.description,
     author,
     id: siteUrl,
     link: siteUrl,
-    image: `${siteUrl}/favicon.ico`,
+    image: `${siteUrl}/me.png`,
     favicon: `${siteUrl}/favicon.ico`,
-    copyright: `All rights reserved ${new Date().getFullYear()}`,
+    copyright: `All rights reserved ${new Date().getFullYear()} ${DATA.name}`,
     feedLinks: {
       rss2: `${siteUrl}/feed.xml`,
     },
-  })
+  });
 
-  let articleIds = require
-    .context('../articles', true, /\/page\.mdx$/)
-    .keys()
-    .filter((key) => key.startsWith('./'))
-    .map((key) => key.slice(2).replace(/\/page\.mdx$/, ''))
+  const posts = await getBlogPosts();
 
-  for (let id of articleIds) {
-    let url = String(new URL(`/articles/${id}`, req.url))
-    let html = await (await fetch(url)).text()
-    let $ = cheerio.load(html)
-
-    let publicUrl = `${siteUrl}/articles/${id}`
-    let article = $('article').first()
-    let title = article.find('h1').first().text()
-    let date = article.find('time').first().attr('datetime')
-    let content = article.find('[data-mdx-content]').first().html()
-
-    assert(typeof title === 'string')
-    assert(typeof date === 'string')
-    assert(typeof content === 'string')
-
+  for (const post of posts) {
+    const url = `${siteUrl}/blog/${post.slug}`;
     feed.addItem({
-      title,
-      id: publicUrl,
-      link: publicUrl,
-      content,
+      title: post.metadata.title,
+      id: url,
+      link: url,
+      description: post.metadata.summary,
+      content: post.source,
       author: [author],
-      contributor: [author],
-      date: new Date(date),
-    })
+      date: new Date(post.metadata.publishedAt),
+    });
   }
 
   return new Response(feed.rss2(), {
     status: 200,
     headers: {
-      'content-type': 'application/xml',
-      'cache-control': 's-maxage=31556952',
+      "content-type": "application/xml",
+      "cache-control": "s-maxage=31556952",
     },
-  })
+  });
 }

@@ -17,7 +17,7 @@ type Hackathon = {
 export const DATA = {
   name: "Gan Liu",
   initials: "GL",
-  url: "https://ganliu.dev",
+  url: "https://ganliu.blog",
   location: "Shenzhen, China",
   locationLink: "https://www.google.com/maps/place/shenzhen",
   description:
