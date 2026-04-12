@@ -2,6 +2,8 @@ import { Feed } from "feed";
 import { getBlogPosts } from "@/data/blog";
 import { DATA } from "@/data/resume";
 
+export const dynamic = "force-static";
+
 export async function GET() {
   const siteUrl = DATA.url;
 
